@@ -155,6 +155,10 @@ INSERT INTO payments (payment_id, order_id, amount, payment_date, method) VALUES
 -- (g) Invalid payment method (ENUM)
 -- INSERT INTO payments (order_id, amount, payment_date, method)
 -- VALUES (2, 1000, '2025-04-01', 'Crypto');
+--
+-- (h) Duplicate technician email (UNIQUE email)
+-- INSERT INTO technicians (full_name, email, skill, team_id)
+-- VALUES ('Test Tech', 'an.nguyen@garage.example', 'Test', 1);
 
 -- =====================================================================
 -- INTEGRITY CHECKS (every violation count below must be 0)
