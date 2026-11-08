@@ -1,14 +1,6 @@
--- =====================================================================
--- seed.sql  |  Sample data + integrity checks
--- Requires: schema.sql executed first
--- =====================================================================
+
 USE garage_mini;
 
--- ---------------------------------------------------------------------
--- teams (5)
--- Team 5 has no orders in Q1/2025 (only 2024 history)
--- Team 4 never has a confirmed cost (only Pending / Cancelled orders)
--- ---------------------------------------------------------------------
 INSERT INTO teams (team_id, name) VALUES
 (1, 'Engine & Transmission Team'),
 (2, 'Electrical & Electronics Team'),
@@ -16,10 +8,7 @@ INSERT INTO teams (team_id, name) VALUES
 (4, 'Brakes & Suspension Team'),
 (5, 'Air-Conditioning Team');
 
--- ---------------------------------------------------------------------
 -- technicians (6)
--- Technician 6 has no orders in 2025
--- ---------------------------------------------------------------------
 INSERT INTO technicians (technician_id, full_name, email, skill, team_id) VALUES
 (1, 'Nguyen Van An',   'an.nguyen@garage.example',   'Engine diagnostics',   1),
 (2, 'Tran Minh Tuan',  'tuan.tran@garage.example',   'Gearbox repair',       1),
@@ -27,13 +16,7 @@ INSERT INTO technicians (technician_id, full_name, email, skill, team_id) VALUES
 (4, 'Pham Quoc Bao',   'bao.pham@garage.example',    'Panel beating',        3),
 (5, 'Vo Thanh Long',   'long.vo@garage.example',     'Brake systems',        4),
 (6, 'Dang Huu Phuc',   'phuc.dang@garage.example',   'A/C systems',          5);
-
--- ---------------------------------------------------------------------
 -- customers (10)
--- Customers 2 and 10 share the same name (to show why IDs are returned)
--- Customer 8 has no orders at all
--- Customers 4, 7 have orders but never paid
--- ---------------------------------------------------------------------
 INSERT INTO customers (customer_id, full_name, phone, address) VALUES
 (1,  'Nguyen Thi Lan',  '0901000001', '12 Le Loi, District 1, Ho Chi Minh City'),
 (2,  'Tran Van Hung',   '0901000002', '45 Nguyen Hue, District 1, Ho Chi Minh City'),
@@ -45,16 +28,7 @@ INSERT INTO customers (customer_id, full_name, phone, address) VALUES
 (8,  'Vu Thi Hanh',     '0901000008', '88 Hung Vuong, Hai Chau, Da Nang'),
 (9,  'Dang Minh Khoa',  '0901000009', '14 Vo Van Tan, District 3, Ho Chi Minh City'),
 (10, 'Tran Van Hung',   '0901000010', '67 Cach Mang Thang 8, Ninh Kieu, Can Tho');
-
--- ---------------------------------------------------------------------
 -- repair_orders (20)
---   2024            : order 1
---   Jan 2025        : orders 2-5
---   Feb 2025        : orders 6-7
---   Mar 2025        : orders 8-11   (order 8 is on 31/03 23:30 = end-of-quarter boundary)
---   Apr-Dec 2025    : orders 12-17, 19-20 (order 19 on 28/12, paid in 2026)
---   2026            : order 18
--- ---------------------------------------------------------------------
 INSERT INTO repair_orders (order_id, customer_id, technician_id, received_at, status, license_plate) VALUES
 (1,  5, 6, '2024-11-12 09:00:00', 'Completed', '51A-111.11'),
 (2,  1, 1, '2025-01-08 08:30:00', 'Completed', '30A-123.45'),
@@ -76,10 +50,7 @@ INSERT INTO repair_orders (order_id, customer_id, technician_id, received_at, st
 (18, 9, 4, '2026-01-10 08:00:00', 'Completed', '51K-999.99'),
 (19, 10, 3, '2025-12-28 15:40:00', 'Completed', '65A-101.01'),
 (20, 4,  1, '2025-10-08 10:30:00', 'Completed', '29C-444.44');
-
--- ---------------------------------------------------------------------
 -- repair_reports (15) : exactly one per Completed order, none for others
--- ---------------------------------------------------------------------
 INSERT INTO repair_reports (report_id, order_id, fault_description, work_summary, cost) VALUES
 (1,  1,  'Air conditioner not cooling',   'Replaced compressor, recharged gas',     3200000.00),
 (2,  2,  'Engine misfire',                'Replaced spark plugs and ignition coils', 4500000.00),
@@ -96,16 +67,7 @@ INSERT INTO repair_reports (report_id, order_id, fault_description, work_summary
 (13, 18, 'Crumpled hood',                 'Replaced hood and repainted',             2600000.00),
 (14, 19, 'Faulty central locking',        'Replaced door lock actuator',             1500000.00),
 (15, 20, 'Engine stalls at low speed',      'Replaced fuel pump',                     2400000.00);
-
--- ---------------------------------------------------------------------
 -- payments (16)
---   Order 2  : 3 instalments (multiple payments for one order, fully paid)
---   Order 6  : 3,000,000 of 6,000,000 paid        -> still owing
---   Order 7  : 1,000,000 of 1,800,000 paid        -> still owing
---   Order 9  : 5,000,000 + 4,000,000 of 12,500,000 -> still owing
---   Orders 12 and 20: no payment                   -> still owing
---   Order 19 : paid on 2026-01-05 (outside 2025 for the 2025 report)
--- ---------------------------------------------------------------------
 INSERT INTO payments (payment_id, order_id, amount, payment_date, method) VALUES
 (1,  1,  3200000.00, '2024-11-15', 'Cash'),
 (2,  2,  2000000.00, '2025-01-10', 'Cash'),
@@ -123,47 +85,6 @@ INSERT INTO payments (payment_id, order_id, amount, payment_date, method) VALUES
 (14, 17, 4000000.00, '2025-11-05', 'Card'),
 (15, 18, 2600000.00, '2026-01-15', 'Cash'),
 (16, 19, 1500000.00, '2026-01-05', 'BankTransfer');
-
--- ---------------------------------------------------------------------
--- Illustrative INSERTs that VIOLATE constraints (kept as comments so that the
--- whole file still runs). Un-comment ONE at a time to see the error.
--- ---------------------------------------------------------------------
--- (a) Foreign key violation: customer 999 does not exist
--- INSERT INTO repair_orders (customer_id, technician_id, received_at, status, license_plate)
--- VALUES (999, 1, '2025-02-01 08:00:00', 'Pending', '30A-000.00');
---
--- (b) Invalid status (ENUM)
--- INSERT INTO repair_orders (customer_id, technician_id, received_at, status, license_plate)
--- VALUES (1, 1, '2025-02-01 08:00:00', 'Done', '30A-000.00');
---
--- (c) Blank license plate (CHECK)
--- INSERT INTO repair_orders (customer_id, technician_id, received_at, status, license_plate)
--- VALUES (1, 1, '2025-02-01 08:00:00', 'Pending', '   ');
---
--- (d) Negative cost (CHECK)
--- INSERT INTO repair_reports (order_id, fault_description, work_summary, cost)
--- VALUES (4, 'Test', 'Test', -100.00);
---
--- (e) Second report for the same order (UNIQUE order_id)
--- INSERT INTO repair_reports (order_id, fault_description, work_summary, cost)
--- VALUES (2, 'Duplicate report', 'Duplicate', 100000.00);
---
--- (f) Payment amount <= 0 (CHECK)
--- INSERT INTO payments (order_id, amount, payment_date, method)
--- VALUES (2, 0, '2025-04-01', 'Cash');
---
--- (g) Invalid payment method (ENUM)
--- INSERT INTO payments (order_id, amount, payment_date, method)
--- VALUES (2, 1000, '2025-04-01', 'Crypto');
---
--- (h) Duplicate technician email (UNIQUE email)
--- INSERT INTO technicians (full_name, email, skill, team_id)
--- VALUES ('Test Tech', 'an.nguyen@garage.example', 'Test', 1);
-
--- =====================================================================
--- INTEGRITY CHECKS (every violation count below must be 0)
--- =====================================================================
-
 -- Check 1: foreign keys (orphan rows)
 SELECT 'technicians.team_id -> teams' AS check_name, COUNT(*) AS violations
 FROM technicians t LEFT JOIN teams tm ON tm.team_id = t.team_id
@@ -184,10 +105,7 @@ UNION ALL
 SELECT 'payments.order_id -> repair_orders', COUNT(*)
 FROM payments p LEFT JOIN repair_orders o ON o.order_id = p.order_id
 WHERE o.order_id IS NULL;
-
 -- Check 2: status vs. repair report
---   (a) Completed orders without a report, (b) non-Completed orders with a report,
---   (c) orders with more than one report
 SELECT 'Completed order without report' AS check_name, COUNT(*) AS violations
 FROM repair_orders o LEFT JOIN repair_reports r ON r.order_id = o.order_id
 WHERE o.status = 'Completed' AND r.report_id IS NULL
@@ -198,12 +116,10 @@ WHERE o.status <> 'Completed'
 UNION ALL
 SELECT 'Order with more than one report', COUNT(*)
 FROM (SELECT order_id FROM repair_reports GROUP BY order_id HAVING COUNT(*) > 1) x;
-
 -- Check 3: payments only for orders that have a confirmed cost
 SELECT 'Payment on order without confirmed cost' AS check_name, COUNT(*) AS violations
 FROM payments p LEFT JOIN repair_reports r ON r.order_id = p.order_id
 WHERE r.report_id IS NULL;
-
 -- Check 4: total collected per order must not exceed the confirmed cost
 SELECT 'Order paid more than its cost' AS check_name, COUNT(*) AS violations
 FROM (
@@ -213,7 +129,6 @@ FROM (
     GROUP BY r.order_id, r.cost
     HAVING SUM(p.amount) > r.cost
 ) x;
-
 -- Check 5 (informational): per-order cost / collected / outstanding
 SELECT r.order_id, r.cost,
        COALESCE(SUM(p.amount), 0)          AS total_paid,
@@ -223,7 +138,6 @@ FROM repair_reports r
 LEFT JOIN payments p ON p.order_id = r.order_id
 GROUP BY r.order_id, r.cost
 ORDER BY r.order_id;
-
 -- Check 6 (informational): minimum record counts required by the brief
 SELECT 'teams' AS table_name, COUNT(*) AS row_count, 5  AS required FROM teams
 UNION ALL SELECT 'technicians',    COUNT(*), 6  FROM technicians

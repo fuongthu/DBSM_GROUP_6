@@ -1,13 +1,4 @@
--- =====================================================================
--- views.sql  |  3 views (all-time, not limited to 2025)
--- Requires: schema.sql and seed.sql executed first
--- =====================================================================
 USE garage_mini;
-
--- ---------------------------------------------------------------------
--- v_detail : one row per repair order.
--- LEFT JOIN on repair_reports keeps orders with no report (cost = NULL).
--- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_detail AS
 SELECT o.order_id,
        o.received_at,
@@ -24,12 +15,7 @@ JOIN customers   c  ON c.customer_id   = o.customer_id
 JOIN technicians t  ON t.technician_id = o.technician_id
 JOIN teams       tm ON tm.team_id      = t.team_id
 LEFT JOIN repair_reports r ON r.order_id = o.order_id;
-
--- ---------------------------------------------------------------------
--- v_group_summary : one row per team (teams without orders are kept).
--- Counts use CASE so every order is counted once; payments are not joined,
--- so cost cannot be duplicated. Missing totals are shown as 0.
--- ---------------------------------------------------------------------
+-- v_group_summary : one row per team (teams without orders are kept)
 CREATE OR REPLACE VIEW v_group_summary AS
 SELECT tm.team_id,
        tm.name AS team_name,
@@ -43,13 +29,7 @@ LEFT JOIN repair_orders o   ON o.technician_id = t.technician_id
 LEFT JOIN repair_reports r  ON r.order_id      = o.order_id
 GROUP BY tm.team_id, tm.name;
 
--- ---------------------------------------------------------------------
--- v_debt : one row per customer.
--- Cost and payments are aggregated SEPARATELY in derived tables, then joined
--- on customer_id.  Joining reports and payments directly would repeat the
--- cost once per payment and inflate the total (fan-out / double counting).
--- debt = confirmed cost - money actually collected.
--- ---------------------------------------------------------------------
+-- v_debt : one row per customer
 CREATE OR REPLACE VIEW v_debt AS
 SELECT c.customer_id,
        c.full_name AS customer_name,
@@ -69,10 +49,7 @@ LEFT JOIN (
     JOIN payments p ON p.order_id = o.order_id
     GROUP BY o.customer_id
 ) paid ON paid.customer_id = c.customer_id;
-
--- ---------------------------------------------------------------------
 -- Quick demonstration of the views
--- ---------------------------------------------------------------------
 SELECT * FROM v_detail ORDER BY order_id;
 SELECT * FROM v_group_summary ORDER BY team_id;
 SELECT * FROM v_debt ORDER BY customer_id;
